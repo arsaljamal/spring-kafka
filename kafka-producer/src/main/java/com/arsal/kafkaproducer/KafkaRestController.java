@@ -19,6 +19,10 @@ public class KafkaRestController {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
+    @Autowired
+    private KafkaTemplate<String, Student> studentKafkaTemplate;
+
+
     @PostMapping("/create/topic")
     public void createTopicWithAdmin(@RequestParam(value = "topic") String topic) {
         short replicationFactor=1;
@@ -29,6 +33,11 @@ public class KafkaRestController {
     @PostMapping("/create/message")
     public void createMessageWithTemplate(@RequestParam(value = "topic") String topic, @RequestParam(value = "message") String message) {
         sendMessage(topic, message);
+    }
+
+    @PostMapping("/create/student/message")
+    public void createStudentMessageWithTemplate(@RequestParam(value = "topic") String topic, @RequestBody Student student) {
+        sendMessageToStudent(topic, student);
     }
 
     public void sendMessage(String topic, String message) {
@@ -46,4 +55,21 @@ public class KafkaRestController {
             }
         });
     }
+
+    public void sendMessageToStudent(String topic, Student student) {
+        ListenableFuture<SendResult<String, Student>> future = studentKafkaTemplate.send(topic, student);
+
+        future.addCallback(new ListenableFutureCallback<SendResult<String, Student>>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                System.out.println("Failure with following error :" + ex.getMessage());
+            }
+
+            @Override
+            public void onSuccess(SendResult<String, Student> result) {
+                System.out.println("Message : " + student + ", Offset : " + result.getRecordMetadata().offset());
+            }
+        });
+    }
+
 }
